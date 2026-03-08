@@ -23,8 +23,8 @@ graph TD
     Browser(Brskalnik)
 
     Browser -->|HTTP| WebUI[web-ui]
-    Browser -->|REST - prijava/registracija| UserService[user-service]
 
+    WebUI -->|REST - prijava/registracija| UserService[user-service]
     WebUI -->|REST| VenueService[venue-service]
     WebUI -->|REST| ReservationService[reservation-service]
 
