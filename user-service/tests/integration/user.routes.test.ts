@@ -1,15 +1,14 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import User from '../../src/domain/entities/User';
+import PostgresUserRepository from '../../src/infrastructure/database/PostgresUserRepository';
 
 process.env.JWT_SECRET = 'test-secret';
 
 jest.mock('../../src/infrastructure/database/PostgresUserRepository');
-import PostgresUserRepository from '../../src/infrastructure/database/PostgresUserRepository';
+jest.mock('../../src/infrastructure/database/db', () => ({ query: jest.fn(), on: jest.fn() }));
 
 import app from '../../src/app';
-
-const MockedRepo = PostgresUserRepository as jest.MockedClass<typeof PostgresUserRepository>;
 
 describe('User Routes', () => {
   let token: string;
@@ -22,7 +21,7 @@ describe('User Routes', () => {
   describe('GET /users/:id', () => {
     test('should return user by id', async () => {
       const user = new User({ id: 1, email: 'test@test.com', passwordHash: 'h', role: 'RENTER', createdAt: new Date(), updatedAt: new Date() });
-      MockedRepo.prototype.findById = jest.fn().mockResolvedValue(user);
+      jest.spyOn(PostgresUserRepository.prototype, 'findById').mockResolvedValue(user);
 
       const res = await request(app)
         .get('/users/1')
@@ -45,7 +44,7 @@ describe('User Routes', () => {
     });
 
     test('should return 404 if user not found', async () => {
-      MockedRepo.prototype.findById = jest.fn().mockResolvedValue(null);
+      jest.spyOn(PostgresUserRepository.prototype, 'findById').mockResolvedValue(null);
 
       const res = await request(app)
         .get('/users/999')

@@ -1,15 +1,14 @@
 import request from 'supertest';
 import bcrypt from 'bcrypt';
 import User from '../../src/domain/entities/User';
+import PostgresUserRepository from '../../src/infrastructure/database/PostgresUserRepository';
 
 process.env.JWT_SECRET = 'test-secret';
 
 jest.mock('../../src/infrastructure/database/PostgresUserRepository');
-import PostgresUserRepository from '../../src/infrastructure/database/PostgresUserRepository';
+jest.mock('../../src/infrastructure/database/db', () => ({ query: jest.fn(), on: jest.fn() }));
 
 import app from '../../src/app';
-
-const MockedRepo = PostgresUserRepository as jest.MockedClass<typeof PostgresUserRepository>;
 
 describe('Auth Routes', () => {
   beforeEach(() => {
@@ -18,10 +17,9 @@ describe('Auth Routes', () => {
 
   describe('POST /auth/register', () => {
     test('should register a new user and return 201', async () => {
-      MockedRepo.prototype.findByEmail = jest.fn().mockResolvedValue(null);
-      MockedRepo.prototype.save = jest.fn().mockResolvedValue(
-        new User({ id: 1, email: 'test@test.com', passwordHash: 'h', role: 'RENTER', createdAt: new Date(), updatedAt: new Date() })
-      );
+      const savedUser = new User({ id: 1, email: 'test@test.com', passwordHash: 'h', role: 'RENTER', createdAt: new Date(), updatedAt: new Date() });
+      jest.spyOn(PostgresUserRepository.prototype, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(PostgresUserRepository.prototype, 'save').mockResolvedValue(savedUser);
 
       const res = await request(app)
         .post('/auth/register')
@@ -33,7 +31,7 @@ describe('Auth Routes', () => {
 
     test('should return 400 if user already exists', async () => {
       const existing = new User({ id: 1, email: 'existing@test.com', passwordHash: 'h', role: 'RENTER', createdAt: new Date(), updatedAt: new Date() });
-      MockedRepo.prototype.findByEmail = jest.fn().mockResolvedValue(existing);
+      jest.spyOn(PostgresUserRepository.prototype, 'findByEmail').mockResolvedValue(existing);
 
       const res = await request(app)
         .post('/auth/register')
@@ -48,7 +46,7 @@ describe('Auth Routes', () => {
     test('should return token on successful login', async () => {
       const passwordHash = await bcrypt.hash('password123', 10);
       const user = new User({ id: 1, email: 'test@test.com', passwordHash, role: 'RENTER', createdAt: new Date(), updatedAt: new Date() });
-      MockedRepo.prototype.findByEmail = jest.fn().mockResolvedValue(user);
+      jest.spyOn(PostgresUserRepository.prototype, 'findByEmail').mockResolvedValue(user);
 
       const res = await request(app)
         .post('/auth/login')
@@ -59,7 +57,7 @@ describe('Auth Routes', () => {
     });
 
     test('should return 401 with wrong credentials', async () => {
-      MockedRepo.prototype.findByEmail = jest.fn().mockResolvedValue(null);
+      jest.spyOn(PostgresUserRepository.prototype, 'findByEmail').mockResolvedValue(null);
 
       const res = await request(app)
         .post('/auth/login')
