@@ -49,6 +49,15 @@ graph TD
 | `reservation-service` → `user-service` | gRPC | Preverjanje identitete najemnika |
 | `reservation-service` → sporočilni posrednik | RabbitMQ | Asinhrono obveščanje ob potrditvi/odpovedi rezervacije |
 
+## Tehnologije
+
+| Storitev | Jezik | Ogrodje | Baza | REST port | gRPC port |
+|---|---|---|---|---|---|
+| `user-service` | TypeScript | Express.js | PostgreSQL | 3001 | 50051 |
+| `venue-service` | TypeScript | NestJS | PostgreSQL | 3002 | 50052 |
+| `reservation-service` | - | - | - | - | - |
+| `web-ui` | TypeScript | React + Vite | – | 80 | – |
+
 ## Struktura projekta
 
 ```
