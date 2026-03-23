@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package venue;
+
+service VenueService {
+  rpc GetVenue (GetVenueRequest) returns (GetVenueResponse);
+  rpc CheckAvailability (CheckAvailabilityRequest) returns (CheckAvailabilityResponse);
+}
+
+message GetVenueRequest {
+  int32 venue_id = 1;
+}
+
+message GetVenueResponse {
+  int32 id = 1;
+  int32 owner_id = 2;
+  string name = 3;
+  string location = 4;
+  int32 capacity = 5;
+  double price_per_day = 6;
+  bool is_available = 7;
+}
+
+message CheckAvailabilityRequest {
+  int32 venue_id = 1;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+message CheckAvailabilityResponse {
+  bool available = 1;
+}
