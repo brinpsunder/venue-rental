@@ -55,7 +55,7 @@ graph TD
 |---|---|---|---|---|---|
 | `user-service` | TypeScript | Express.js | PostgreSQL | 3001 | 50051 |
 | `venue-service` | TypeScript | NestJS | PostgreSQL | 3002 | 50052 |
-| `reservation-service` | - | - | - | - | - |
+| `reservation-service` | TypeScript | Fastify | PostgreSQL | 3003 | – |
 | `web-ui` | TypeScript | React + Vite | – | 80 | – |
 
 ## Struktura projekta

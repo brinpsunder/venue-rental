@@ -74,6 +74,60 @@ services:
       timeout: 5s
       retries: 5
 
+  reservation-service:
+    build: ./reservation-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DB_HOST=reservation-db
+      - DB_PORT=5432
+      - DB_NAME=${RESERVATION_DB_NAME}
+      - DB_USER=${RESERVATION_DB_USER}
+      - DB_PASSWORD=${RESERVATION_DB_PASSWORD}
+      - USER_SERVICE_HOST=user-service
+      - USER_GRPC_PORT=50051
+      - VENUE_SERVICE_HOST=venue-service
+      - VENUE_GRPC_PORT=50052
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      reservation-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      venue-service:
+        condition: service_started
+
+  reservation-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${RESERVATION_DB_NAME}
+      POSTGRES_USER: ${RESERVATION_DB_USER}
+      POSTGRES_PASSWORD: ${RESERVATION_DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - reservation-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RESERVATION_DB_USER} -d ${RESERVATION_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web-ui:
     build: ./web-ui
     ports:
@@ -81,7 +135,9 @@ services:
     depends_on:
       - user-service
       - venue-service
+      - reservation-service
 
 volumes:
   user-db-data:
   venue-db-data:
+  reservation-db-data:
