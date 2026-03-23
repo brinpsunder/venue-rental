@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { ReservationService } from '../services/reservation.service';
-import { CreateReservationBody } from '../schemas/reservation.schema';
+import { CreateReservationBody, ReservationResponse, ReservationListResponse } from '../schemas/reservation.schema';
 
 export async function reservationRoutes(app: FastifyInstance) {
   const service = new ReservationService();
@@ -20,6 +20,7 @@ export async function reservationRoutes(app: FastifyInstance) {
       summary: 'Create a reservation (renters only)',
       security: [{ bearerAuth: [] }],
       body: CreateReservationBody,
+      response: { 201: ReservationResponse },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -45,6 +46,7 @@ export async function reservationRoutes(app: FastifyInstance) {
         renterId: Type.Optional(Type.Integer()),
         venueId: Type.Optional(Type.Integer()),
       }),
+      response: { 200: ReservationListResponse },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -63,6 +65,7 @@ export async function reservationRoutes(app: FastifyInstance) {
       summary: 'Get a reservation by ID',
       security: [{ bearerAuth: [] }],
       params: Type.Object({ id: Type.Integer() }),
+      response: { 200: ReservationResponse },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -81,6 +84,7 @@ export async function reservationRoutes(app: FastifyInstance) {
       summary: 'Confirm a reservation',
       security: [{ bearerAuth: [] }],
       params: Type.Object({ id: Type.Integer() }),
+      response: { 200: ReservationResponse },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -99,6 +103,7 @@ export async function reservationRoutes(app: FastifyInstance) {
       summary: 'Cancel a reservation',
       security: [{ bearerAuth: [] }],
       params: Type.Object({ id: Type.Integer() }),
+      response: { 200: ReservationResponse },
     },
   }, async (req, reply) => {
     const token = getToken(req);
