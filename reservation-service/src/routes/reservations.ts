@@ -1,7 +1,19 @@
 import { FastifyInstance } from 'fastify';
-import { Type } from '@sinclair/typebox';
 import { ReservationService } from '../services/reservation.service';
-import { CreateReservationBody, ReservationResponse, ReservationListResponse } from '../schemas/reservation.schema';
+
+const reservationSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'integer' },
+    renter_id: { type: 'integer' },
+    venue_id: { type: 'integer' },
+    start_date: { type: 'string' },
+    end_date: { type: 'string' },
+    status: { type: 'string', enum: ['PENDING', 'CONFIRMED', 'CANCELLED'] },
+    created_at: { type: 'string' },
+    updated_at: { type: 'string' },
+  },
+};
 
 export async function reservationRoutes(app: FastifyInstance) {
   const service = new ReservationService();
@@ -14,13 +26,21 @@ export async function reservationRoutes(app: FastifyInstance) {
     return auth.slice(7);
   }
 
-  app.post('/', {
+  app.post('/reservations', {
     schema: {
       tags: ['reservations'],
       summary: 'Create a reservation (renters only)',
       security: [{ bearerAuth: [] }],
-      body: CreateReservationBody,
-      response: { 201: ReservationResponse },
+      body: {
+        type: 'object',
+        required: ['venueId', 'startDate', 'endDate'],
+        properties: {
+          venueId: { type: 'integer', minimum: 1 },
+          startDate: { type: 'string', description: 'YYYY-MM-DD' },
+          endDate: { type: 'string', description: 'YYYY-MM-DD' },
+        },
+      },
+      response: { 201: reservationSchema },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -37,16 +57,19 @@ export async function reservationRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/', {
+  app.get('/reservations', {
     schema: {
       tags: ['reservations'],
       summary: 'List reservations',
       security: [{ bearerAuth: [] }],
-      querystring: Type.Object({
-        renterId: Type.Optional(Type.Integer()),
-        venueId: Type.Optional(Type.Integer()),
-      }),
-      response: { 200: ReservationListResponse },
+      querystring: {
+        type: 'object',
+        properties: {
+          renterId: { type: 'integer' },
+          venueId: { type: 'integer' },
+        },
+      },
+      response: { 200: { type: 'array', items: reservationSchema } },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -59,13 +82,16 @@ export async function reservationRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/:id', {
+  app.get('/reservations/:id', {
     schema: {
       tags: ['reservations'],
       summary: 'Get a reservation by ID',
       security: [{ bearerAuth: [] }],
-      params: Type.Object({ id: Type.Integer() }),
-      response: { 200: ReservationResponse },
+      params: {
+        type: 'object',
+        properties: { id: { type: 'integer' } },
+      },
+      response: { 200: reservationSchema },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -78,13 +104,16 @@ export async function reservationRoutes(app: FastifyInstance) {
     }
   });
 
-  app.patch('/:id/confirm', {
+  app.patch('/reservations/:id/confirm', {
     schema: {
       tags: ['reservations'],
       summary: 'Confirm a reservation',
       security: [{ bearerAuth: [] }],
-      params: Type.Object({ id: Type.Integer() }),
-      response: { 200: ReservationResponse },
+      params: {
+        type: 'object',
+        properties: { id: { type: 'integer' } },
+      },
+      response: { 200: reservationSchema },
     },
   }, async (req, reply) => {
     const token = getToken(req);
@@ -97,13 +126,16 @@ export async function reservationRoutes(app: FastifyInstance) {
     }
   });
 
-  app.patch('/:id/cancel', {
+  app.patch('/reservations/:id/cancel', {
     schema: {
       tags: ['reservations'],
       summary: 'Cancel a reservation',
       security: [{ bearerAuth: [] }],
-      params: Type.Object({ id: Type.Integer() }),
-      response: { 200: ReservationResponse },
+      params: {
+        type: 'object',
+        properties: { id: { type: 'integer' } },
+      },
+      response: { 200: reservationSchema },
     },
   }, async (req, reply) => {
     const token = getToken(req);
