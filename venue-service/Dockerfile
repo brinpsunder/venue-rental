@@ -3,7 +3,7 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 COPY package*.json tsconfig*.json nest-cli.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY src ./src
 RUN npm run build \
@@ -16,7 +16,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install --legacy-peer-deps --omit=dev
 
 COPY --from=build /app/dist ./dist
 
