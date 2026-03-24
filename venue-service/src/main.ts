@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
 import { join } from 'path';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -29,6 +30,15 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Venue Service API')
+    .setDescription('API for managing venues')
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api-docs', app, document);
 
   const port = process.env.PORT ?? 3002;
   await app.listen(port);
