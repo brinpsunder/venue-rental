@@ -26,6 +26,7 @@ async function bootstrap() {
       package: 'venue',
       protoPath: join(__dirname, 'proto', 'venue.proto'),
       url: `0.0.0.0:${process.env.GRPC_PORT ?? '50052'}`,
+      loader: { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true },
     },
   });
 

@@ -12,6 +12,7 @@ import { join } from 'path';
           package: 'user',
           protoPath: join(__dirname, '..', 'proto', 'user.proto'),
           url: `${process.env.USER_SERVICE_HOST ?? 'localhost'}:${process.env.USER_GRPC_PORT ?? '50051'}`,
+          loader: { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true },
         },
       },
     ]),
