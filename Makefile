@@ -1,4 +1,4 @@
-.PHONY: dev build down logs test install lint
+.PHONY: dev build down logs test install lint demo
 
 dev:
 	docker-compose up
@@ -34,3 +34,6 @@ dev-user:
 
 dev-ui:
 	cd web-ui && npm run dev
+
+demo:
+	bash scripts/demo-bffs.sh

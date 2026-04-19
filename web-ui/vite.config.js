@@ -6,8 +6,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/auth': 'http://localhost:3001',
-      '/users': 'http://localhost:3001',
+      '/auth': 'http://localhost:4000',
+      '/users': 'http://localhost:4000',
+      '/venues': 'http://localhost:4000',
+      '/reservations': 'http://localhost:4000',
     },
   },
 });

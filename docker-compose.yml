@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   user-service:
     build: ./user-service
@@ -128,14 +126,48 @@ services:
       timeout: 5s
       retries: 5
 
+  web-bff:
+    build: ./web-bff
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - USER_SERVICE_HOST=user-service
+      - USER_GRPC_PORT=50051
+      - USER_REST_URL=http://user-service:3001
+      - VENUE_SERVICE_HOST=venue-service
+      - VENUE_GRPC_PORT=50052
+      - VENUE_REST_URL=http://venue-service:3002
+      - RESERVATION_REST_URL=http://reservation-service:3003
+    depends_on:
+      - user-service
+      - venue-service
+      - reservation-service
+
+  mobile-bff:
+    build: ./mobile-bff
+    ports:
+      - "4001:4001"
+    environment:
+      - PORT=4001
+      - USER_SERVICE_HOST=user-service
+      - USER_GRPC_PORT=50051
+      - USER_REST_URL=http://user-service:3001
+      - VENUE_SERVICE_HOST=venue-service
+      - VENUE_GRPC_PORT=50052
+      - VENUE_REST_URL=http://venue-service:3002
+      - RESERVATION_REST_URL=http://reservation-service:3003
+    depends_on:
+      - user-service
+      - venue-service
+      - reservation-service
+
   web-ui:
     build: ./web-ui
     ports:
       - "80:80"
     depends_on:
-      - user-service
-      - venue-service
-      - reservation-service
+      - web-bff
 
 volumes:
   user-db-data:
