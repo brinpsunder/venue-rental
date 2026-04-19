@@ -1,0 +1,97 @@
+.pageHeader {
+  margin-bottom: 28px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+}
+
+.pageSubtitle {
+  font-size: 15px;
+  color: #6e6e73;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.tile {
+  display: block;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px;
+  border: 1px solid #e5e5ea;
+  color: #1d1d1f;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+}
+
+.tileTag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(52, 199, 89, 0.18);
+  color: #1a7f3e;
+  border-radius: 4px;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.tileTitle {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.tileText {
+  font-size: 14px;
+  color: #6e6e73;
+  line-height: 1.5;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e5ea;
+  padding: 24px;
+  max-width: 520px;
+}
+
+.defList {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  row-gap: 10px;
+  column-gap: 16px;
+  font-size: 14px;
+}
+
+.defList dt {
+  color: #6e6e73;
+  font-weight: 500;
+}
+
+.defList dd {
+  color: #1d1d1f;
+  font-weight: 500;
+}
+
+.error {
+  font-size: 14px;
+  color: #ff3b30;
+  background: #fff2f1;
+  border: 1px solid #ffd5d3;
+  border-radius: 8px;
+  padding: 10px 14px;
+}

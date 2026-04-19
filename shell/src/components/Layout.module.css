@@ -1,0 +1,136 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 14px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5ea;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo {
+  font-size: 22px;
+}
+
+.brandText {
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.shellTag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #0071e3;
+  background: #e8f2ff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.navLink:hover {
+  background: #f5f5f7;
+  text-decoration: none;
+}
+
+.navLinkActive {
+  background: #0071e3;
+  color: #ffffff;
+}
+
+.navLinkActive:hover {
+  background: #0077ed;
+}
+
+.mfeTag {
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(52, 199, 89, 0.18);
+  color: #1a7f3e;
+  border-radius: 4px;
+  padding: 2px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.navLinkActive .mfeTag {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.userBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userEmail {
+  font-size: 13px;
+  color: #6e6e73;
+}
+
+.roleBadge {
+  font-size: 12px;
+  background: #f0f6ff;
+  color: #0071e3;
+  border: 1px solid #cce0ff;
+  border-radius: 12px;
+  padding: 3px 10px;
+}
+
+.logoutBtn {
+  padding: 7px 14px;
+  background: #f5f5f7;
+  border: 1.5px solid #d2d2d7;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.logoutBtn:hover {
+  background: #e8e8ed;
+}
+
+.main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}

@@ -162,12 +162,24 @@ services:
       - venue-service
       - reservation-service
 
-  web-ui:
-    build: ./web-ui
+  venues-mfe:
+    build: ./venues-mfe
+    expose:
+      - "80"
+
+  reservations-mfe:
+    build: ./reservations-mfe
+    expose:
+      - "80"
+
+  shell:
+    build: ./shell
     ports:
       - "80:80"
     depends_on:
       - web-bff
+      - venues-mfe
+      - reservations-mfe
 
 volumes:
   user-db-data:
