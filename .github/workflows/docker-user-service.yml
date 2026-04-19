@@ -1,0 +1,32 @@
+name: Publish user-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'user-service/**'
+      - '.github/workflows/docker-user-service.yml'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./user-service
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/venue-rental-user-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/venue-rental-user-service:${{ github.sha }}
