@@ -14,6 +14,9 @@ export async function apiFetch(path, { method = 'GET', body, token } = {}) {
   const data = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null);
 
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new CustomEvent('venue-rental:unauthorized'));
+    }
     const message = (data && data.error) || res.statusText || 'Request failed';
     const error = new Error(message);
     error.status = res.status;

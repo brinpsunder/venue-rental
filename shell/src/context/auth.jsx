@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -28,6 +28,12 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
   }, []);
+
+  useEffect(() => {
+    const handler = () => clearSession();
+    window.addEventListener('venue-rental:unauthorized', handler);
+    return () => window.removeEventListener('venue-rental:unauthorized', handler);
+  }, [clearSession]);
 
   const value = useMemo(
     () => ({ token, user, setSession, clearSession }),
