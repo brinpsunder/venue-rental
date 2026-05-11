@@ -1,3 +1,4 @@
+import './tracing';
 import app from './app';
 import logger from './logger';
 import pool from './infrastructure/database/db';

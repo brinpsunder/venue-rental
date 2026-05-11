@@ -1,4 +1,12 @@
 services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
   user-service:
     build: ./user-service
     ports:
@@ -14,6 +22,8 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - OTEL_SERVICE_NAME=user-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
       user-db:
         condition: service_healthy
@@ -50,6 +60,8 @@ services:
       - DB_PASSWORD=${VENUE_DB_PASSWORD}
       - USER_SERVICE_HOST=user-service
       - USER_GRPC_PORT=50051
+      - OTEL_SERVICE_NAME=venue-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
       venue-db:
         condition: service_healthy
@@ -89,6 +101,8 @@ services:
       - VENUE_SERVICE_HOST=venue-service
       - VENUE_GRPC_PORT=50052
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - OTEL_SERVICE_NAME=reservation-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
       reservation-db:
         condition: service_healthy
@@ -139,6 +153,8 @@ services:
       - VENUE_GRPC_PORT=50052
       - VENUE_REST_URL=http://venue-service:3002
       - RESERVATION_REST_URL=http://reservation-service:3003
+      - OTEL_SERVICE_NAME=web-bff
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
       - user-service
       - venue-service
@@ -157,6 +173,8 @@ services:
       - VENUE_GRPC_PORT=50052
       - VENUE_REST_URL=http://venue-service:3002
       - RESERVATION_REST_URL=http://reservation-service:3003
+      - OTEL_SERVICE_NAME=mobile-bff
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     depends_on:
       - user-service
       - venue-service

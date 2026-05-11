@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import './tracing';
 import { buildApp } from './app';
 import { initDb } from './db/database';
 import { connectPublisher } from './messaging/publisher';
