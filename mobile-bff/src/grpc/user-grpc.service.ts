@@ -1,6 +1,8 @@
 import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom, Observable } from 'rxjs';
+import CircuitBreaker from 'opossum';
+import { makeBreaker } from '../breakers/registry';
 
 interface UserServiceClient {
   verifyToken(data: { token: string }): Observable<{
@@ -32,25 +34,42 @@ export interface UserResult {
 @Injectable()
 export class UserGrpcService implements OnModuleInit {
   private userService: UserServiceClient;
+  private verifyTokenBreaker: CircuitBreaker<[string], VerifyTokenResult>;
+  private getUserBreaker: CircuitBreaker<[number], UserResult>;
 
   constructor(@Inject('USER_GRPC_CLIENT') private readonly client: ClientGrpc) {}
 
   onModuleInit() {
     this.userService = this.client.getService<UserServiceClient>('UserService');
+
+    // Brez fallbacka — odpoved avtentikacije naj se propagira (401), ne pa
+    // tihih lažnih uspehov.
+    this.verifyTokenBreaker = makeBreaker('user.verifyToken', (token: string) =>
+      firstValueFrom(this.userService.verifyToken({ token })).then((res) => ({
+        valid: res.valid,
+        userId: res.user_id,
+        email: res.email,
+        role: res.role,
+      })),
+    );
+
+    this.getUserBreaker = makeBreaker(
+      'user.getUser',
+      (userId: number) =>
+        firstValueFrom(this.userService.getUser({ user_id: userId })).then((res) => ({
+          id: res.id,
+          email: res.email,
+          role: res.role,
+        })),
+      (userId: number) => ({ id: userId, email: 'unknown', role: 'UNKNOWN' }),
+    );
   }
 
-  async verifyToken(token: string): Promise<VerifyTokenResult> {
-    const res = await firstValueFrom(this.userService.verifyToken({ token }));
-    return {
-      valid: res.valid,
-      userId: res.user_id,
-      email: res.email,
-      role: res.role,
-    };
+  verifyToken(token: string): Promise<VerifyTokenResult> {
+    return this.verifyTokenBreaker.fire(token);
   }
 
-  async getUser(userId: number): Promise<UserResult> {
-    const res = await firstValueFrom(this.userService.getUser({ user_id: userId }));
-    return { id: res.id, email: res.email, role: res.role };
+  getUser(userId: number): Promise<UserResult> {
+    return this.getUserBreaker.fire(userId);
   }
 }

@@ -1,4 +1,4 @@
-.PHONY: dev build down logs test install lint demo
+.PHONY: dev build down logs test install lint demo demo-cb
 
 dev:
 	docker-compose up
@@ -37,3 +37,6 @@ dev-ui:
 
 demo:
 	bash scripts/demo-bffs.sh
+
+demo-cb:
+	bash scripts/demo-circuit-breaker.sh

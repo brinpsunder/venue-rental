@@ -2,6 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { join } from 'path';
 import { config } from '../config';
+import { makeBreaker } from '../breakers/registry';
 
 const USER_PROTO_PATH = join(__dirname, '..', 'proto', 'user.proto');
 
@@ -33,7 +34,7 @@ export interface UserResult {
   role: string;
 }
 
-export function verifyToken(token: string): Promise<VerifyTokenResult> {
+function verifyTokenRaw(token: string): Promise<VerifyTokenResult> {
   return new Promise((resolve, reject) => {
     client.VerifyToken({ token }, (err: any, response: any) => {
       if (err) return reject(err);
@@ -47,7 +48,7 @@ export function verifyToken(token: string): Promise<VerifyTokenResult> {
   });
 }
 
-export function getUser(userId: number): Promise<UserResult> {
+function getUserRaw(userId: number): Promise<UserResult> {
   return new Promise((resolve, reject) => {
     client.GetUser({ user_id: userId }, (err: any, response: any) => {
       if (err) return reject(err);
@@ -59,3 +60,17 @@ export function getUser(userId: number): Promise<UserResult> {
     });
   });
 }
+
+// Brez fallbacka — če user-service ne dela, avtentikacija ne sme uspeti.
+// Breaker tu skrbi predvsem za fast-fail in zaščito pred kaskadno odpovedjo.
+const verifyTokenBreaker = makeBreaker('user.verifyToken', verifyTokenRaw);
+
+// Fallback: vrne minimalen "stub" uporabnik, da se UI ne sesuje.
+const getUserBreaker = makeBreaker(
+  'user.getUser',
+  getUserRaw,
+  (userId: number): UserResult => ({ id: userId, email: 'unknown', role: 'UNKNOWN' }),
+);
+
+export const verifyToken = (token: string) => verifyTokenBreaker.fire(token);
+export const getUser = (userId: number) => getUserBreaker.fire(userId);

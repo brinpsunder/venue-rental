@@ -4,8 +4,9 @@ import { VenuesModule } from './venues/venues.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { MobileModule } from './mobile/mobile.module';
 import { HealthModule } from './health/health.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
-  imports: [HealthModule, AuthModule, VenuesModule, ReservationsModule, MobileModule],
+  imports: [HealthModule, AuthModule, VenuesModule, ReservationsModule, MobileModule, AdminModule],
 })
 export class AppModule {}

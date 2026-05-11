@@ -2,6 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { join } from 'path';
 import { config } from '../config';
+import { makeBreaker } from '../breakers/registry';
 
 const VENUE_PROTO_PATH = join(__dirname, '..', 'proto', 'venue.proto');
 
@@ -30,7 +31,7 @@ export interface VenueResult {
   isAvailable: boolean;
 }
 
-export function getVenue(venueId: number): Promise<VenueResult> {
+function getVenueRaw(venueId: number): Promise<VenueResult> {
   return new Promise((resolve, reject) => {
     client.GetVenue({ venue_id: venueId }, (err: any, response: any) => {
       if (err) return reject(err);
@@ -47,7 +48,7 @@ export function getVenue(venueId: number): Promise<VenueResult> {
   });
 }
 
-export function checkAvailability(
+function checkAvailabilityRaw(
   venueId: number,
   startDate: string,
   endDate: string,
@@ -62,3 +63,18 @@ export function checkAvailability(
     );
   });
 }
+
+// Brez fallbacka: pridobivanje detajlov prostora je primarna pot.
+const getVenueBreaker = makeBreaker('venue.getVenue', getVenueRaw);
+
+// Fallback: če preverjanje razpoložljivosti ni dosegljivo, raje vrnemo
+// "ni razpoložljivo", da uporabnik ne dobi false confirma.
+const checkAvailabilityBreaker = makeBreaker(
+  'venue.checkAvailability',
+  checkAvailabilityRaw,
+  () => false,
+);
+
+export const getVenue = (venueId: number) => getVenueBreaker.fire(venueId);
+export const checkAvailability = (venueId: number, startDate: string, endDate: string) =>
+  checkAvailabilityBreaker.fire(venueId, startDate, endDate);

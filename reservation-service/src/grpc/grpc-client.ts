@@ -1,6 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { join } from 'path';
+import { makeBreaker } from '../breakers/registry';
 
 const USER_PROTO_PATH = join(__dirname, '..', 'proto', 'user.proto');
 const VENUE_PROTO_PATH = join(__dirname, '..', 'proto', 'venue.proto');
@@ -46,7 +47,7 @@ export interface VenueResult {
   isAvailable: boolean;
 }
 
-export function verifyToken(token: string): Promise<VerifyTokenResult> {
+function verifyTokenRaw(token: string): Promise<VerifyTokenResult> {
   return new Promise((resolve, reject) => {
     userClient.VerifyToken({ token }, (err: any, response: any) => {
       if (err) return reject(err);
@@ -60,7 +61,7 @@ export function verifyToken(token: string): Promise<VerifyTokenResult> {
   });
 }
 
-export function getVenue(venueId: number): Promise<VenueResult> {
+function getVenueRaw(venueId: number): Promise<VenueResult> {
   return new Promise((resolve, reject) => {
     venueClient.GetVenue({ venue_id: venueId }, (err: any, response: any) => {
       if (err) return reject(err);
@@ -77,7 +78,7 @@ export function getVenue(venueId: number): Promise<VenueResult> {
   });
 }
 
-export function checkAvailability(venueId: number, startDate: string, endDate: string): Promise<boolean> {
+function checkAvailabilityRaw(venueId: number, startDate: string, endDate: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
     venueClient.CheckAvailability(
       { venue_id: venueId, start_date: startDate, end_date: endDate },
@@ -88,3 +89,15 @@ export function checkAvailability(venueId: number, startDate: string, endDate: s
     );
   });
 }
+
+// Brez fallbackov: rezervacija je kritičen poslovni proces, kjer raje
+// vrnemo napako (5xx) kot da tiho izumimo podatke. Breaker tu skrbi za
+// fast-fail in zaščito pred kaskadno odpovedjo, ne pa za graceful degradation.
+const verifyTokenBreaker      = makeBreaker('user.verifyToken',      verifyTokenRaw);
+const getVenueBreaker         = makeBreaker('venue.getVenue',        getVenueRaw);
+const checkAvailabilityBreaker = makeBreaker('venue.checkAvailability', checkAvailabilityRaw);
+
+export const verifyToken = (token: string) => verifyTokenBreaker.fire(token);
+export const getVenue = (venueId: number) => getVenueBreaker.fire(venueId);
+export const checkAvailability = (venueId: number, startDate: string, endDate: string) =>
+  checkAvailabilityBreaker.fire(venueId, startDate, endDate);

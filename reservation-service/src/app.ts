@@ -3,6 +3,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { healthRoutes } from './routes/health';
 import { reservationRoutes } from './routes/reservations';
+import { adminRoutes } from './routes/admin';
 
 export async function buildApp() {
   const app = Fastify({
@@ -36,6 +37,7 @@ export async function buildApp() {
   });
 
   await healthRoutes(app);
+  await adminRoutes(app);
   await reservationRoutes(app);
 
   return app;
