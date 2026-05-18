@@ -1,0 +1,63 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shell
+  labels:
+    app: shell
+spec:
+  to:
+    kind: Service
+    name: shell
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-bff
+  labels:
+    app: web-bff
+spec:
+  to:
+    kind: Service
+    name: web-bff
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mobile-bff
+  labels:
+    app: mobile-bff
+spec:
+  to:
+    kind: Service
+    name: mobile-bff
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+spec:
+  to:
+    kind: Service
+    name: jaeger
+  port:
+    targetPort: ui
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

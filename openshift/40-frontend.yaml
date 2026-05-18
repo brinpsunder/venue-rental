@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venues-mfe
+  labels:
+    app: venues-mfe
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: venues-mfe
+  template:
+    metadata:
+      labels:
+        app: venues-mfe
+    spec:
+      containers:
+        - name: venues-mfe
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-venues-mfe:latest
+          ports:
+            - { containerPort: 8080, name: http }
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "200m", memory: "128Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venues-mfe
+spec:
+  selector: { app: venues-mfe }
+  ports:
+    - { name: http, port: 8080, targetPort: 8080 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservations-mfe
+  labels:
+    app: reservations-mfe
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reservations-mfe
+  template:
+    metadata:
+      labels:
+        app: reservations-mfe
+    spec:
+      containers:
+        - name: reservations-mfe
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-reservations-mfe:latest
+          ports:
+            - { containerPort: 8080, name: http }
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "200m", memory: "128Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservations-mfe
+spec:
+  selector: { app: reservations-mfe }
+  ports:
+    - { name: http, port: 8080, targetPort: 8080 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shell
+  labels:
+    app: shell
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shell
+  template:
+    metadata:
+      labels:
+        app: shell
+    spec:
+      containers:
+        - name: shell
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-shell:latest
+          ports:
+            - { containerPort: 8080, name: http }
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "200m", memory: "128Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shell
+spec:
+  selector: { app: shell }
+  ports:
+    - { name: http, port: 8080, targetPort: 8080 }

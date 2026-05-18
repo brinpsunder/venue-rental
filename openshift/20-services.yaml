@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  labels:
+    app: user-service
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-user-service:latest
+          ports:
+            - { containerPort: 3001, name: rest }
+            - { containerPort: 50051, name: grpc }
+          env:
+            - { name: PORT, value: "3001" }
+            - { name: GRPC_PORT, value: "50051" }
+            - { name: DB_HOST, value: "user-db" }
+            - { name: DB_PORT, value: "5432" }
+            - { name: OTEL_SERVICE_NAME, value: "user-service" }
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_SECRET } }
+            - name: DB_NAME
+              valueFrom: { configMapKeyRef: { name: app-config, key: USER_DB_NAME } }
+            - name: DB_USER
+              valueFrom: { configMapKeyRef: { name: app-config, key: USER_DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-secrets, key: USER_DB_PASSWORD } }
+            - name: LOG_LEVEL
+              valueFrom: { configMapKeyRef: { name: app-config, key: LOG_LEVEL } }
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom: { configMapKeyRef: { name: app-config, key: OTEL_EXPORTER_OTLP_ENDPOINT } }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector: { app: user-service }
+  ports:
+    - { name: rest, port: 3001,  targetPort: 3001 }
+    - { name: grpc, port: 50051, targetPort: 50051 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venue-service
+  labels:
+    app: venue-service
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: venue-service
+  template:
+    metadata:
+      labels:
+        app: venue-service
+    spec:
+      containers:
+        - name: venue-service
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-venue-service:latest
+          ports:
+            - { containerPort: 3002, name: rest }
+            - { containerPort: 50052, name: grpc }
+          env:
+            - { name: PORT, value: "3002" }
+            - { name: GRPC_PORT, value: "50052" }
+            - { name: DB_HOST, value: "venue-db" }
+            - { name: DB_PORT, value: "5432" }
+            - { name: USER_SERVICE_HOST, value: "user-service" }
+            - { name: USER_GRPC_PORT, value: "50051" }
+            - { name: OTEL_SERVICE_NAME, value: "venue-service" }
+            - name: DB_NAME
+              valueFrom: { configMapKeyRef: { name: app-config, key: VENUE_DB_NAME } }
+            - name: DB_USER
+              valueFrom: { configMapKeyRef: { name: app-config, key: VENUE_DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-secrets, key: VENUE_DB_PASSWORD } }
+            - name: LOG_LEVEL
+              valueFrom: { configMapKeyRef: { name: app-config, key: LOG_LEVEL } }
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom: { configMapKeyRef: { name: app-config, key: OTEL_EXPORTER_OTLP_ENDPOINT } }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venue-service
+spec:
+  selector: { app: venue-service }
+  ports:
+    - { name: rest, port: 3002,  targetPort: 3002 }
+    - { name: grpc, port: 50052, targetPort: 50052 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservation-service
+  labels:
+    app: reservation-service
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reservation-service
+  template:
+    metadata:
+      labels:
+        app: reservation-service
+    spec:
+      containers:
+        - name: reservation-service
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-reservation-service:latest
+          ports:
+            - { containerPort: 3003, name: rest }
+          env:
+            - { name: PORT, value: "3003" }
+            - { name: DB_HOST, value: "reservation-db" }
+            - { name: DB_PORT, value: "5432" }
+            - { name: USER_SERVICE_HOST, value: "user-service" }
+            - { name: USER_GRPC_PORT, value: "50051" }
+            - { name: VENUE_SERVICE_HOST, value: "venue-service" }
+            - { name: VENUE_GRPC_PORT, value: "50052" }
+            - { name: OTEL_SERVICE_NAME, value: "reservation-service" }
+            - name: DB_NAME
+              valueFrom: { configMapKeyRef: { name: app-config, key: RESERVATION_DB_NAME } }
+            - name: DB_USER
+              valueFrom: { configMapKeyRef: { name: app-config, key: RESERVATION_DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-secrets, key: RESERVATION_DB_PASSWORD } }
+            - name: LOG_LEVEL
+              valueFrom: { configMapKeyRef: { name: app-config, key: LOG_LEVEL } }
+            - name: RABBITMQ_URL
+              valueFrom: { configMapKeyRef: { name: app-config, key: RABBITMQ_URL } }
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom: { configMapKeyRef: { name: app-config, key: OTEL_EXPORTER_OTLP_ENDPOINT } }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservation-service
+spec:
+  selector: { app: reservation-service }
+  ports:
+    - { name: rest, port: 3003, targetPort: 3003 }

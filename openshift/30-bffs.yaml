@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-bff
+  labels:
+    app: web-bff
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-bff
+  template:
+    metadata:
+      labels:
+        app: web-bff
+    spec:
+      containers:
+        - name: web-bff
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-web-bff:latest
+          ports:
+            - { containerPort: 4000, name: http }
+          env:
+            - { name: PORT, value: "4000" }
+            - { name: USER_SERVICE_HOST, value: "user-service" }
+            - { name: USER_GRPC_PORT, value: "50051" }
+            - { name: USER_REST_URL, value: "http://user-service:3001" }
+            - { name: VENUE_SERVICE_HOST, value: "venue-service" }
+            - { name: VENUE_GRPC_PORT, value: "50052" }
+            - { name: VENUE_REST_URL, value: "http://venue-service:3002" }
+            - { name: RESERVATION_REST_URL, value: "http://reservation-service:3003" }
+            - { name: OTEL_SERVICE_NAME, value: "web-bff" }
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom: { configMapKeyRef: { name: app-config, key: OTEL_EXPORTER_OTLP_ENDPOINT } }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-bff
+spec:
+  selector: { app: web-bff }
+  ports:
+    - { name: http, port: 4000, targetPort: 4000 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mobile-bff
+  labels:
+    app: mobile-bff
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mobile-bff
+  template:
+    metadata:
+      labels:
+        app: mobile-bff
+    spec:
+      containers:
+        - name: mobile-bff
+          image: docker.io/DOCKERHUB_USERNAME/venue-rental-mobile-bff:latest
+          ports:
+            - { containerPort: 4001, name: http }
+          env:
+            - { name: PORT, value: "4001" }
+            - { name: USER_SERVICE_HOST, value: "user-service" }
+            - { name: USER_GRPC_PORT, value: "50051" }
+            - { name: USER_REST_URL, value: "http://user-service:3001" }
+            - { name: VENUE_SERVICE_HOST, value: "venue-service" }
+            - { name: VENUE_GRPC_PORT, value: "50052" }
+            - { name: VENUE_REST_URL, value: "http://venue-service:3002" }
+            - { name: RESERVATION_REST_URL, value: "http://reservation-service:3003" }
+            - { name: OTEL_SERVICE_NAME, value: "mobile-bff" }
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom: { configMapKeyRef: { name: app-config, key: OTEL_EXPORTER_OTLP_ENDPOINT } }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mobile-bff
+spec:
+  selector: { app: mobile-bff }
+  ports:
+    - { name: http, port: 4001, targetPort: 4001 }

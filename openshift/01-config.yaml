@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  labels:
+    app.kubernetes.io/part-of: venue-rental
+type: Opaque
+stringData:
+  JWT_SECRET: "change-me-in-production-with-oc-set-data"
+  USER_DB_PASSWORD: "userpass"
+  VENUE_DB_PASSWORD: "venuepass"
+  RESERVATION_DB_PASSWORD: "reservationpass"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  labels:
+    app.kubernetes.io/part-of: venue-rental
+data:
+  LOG_LEVEL: "info"
+  USER_DB_NAME: "userdb"
+  USER_DB_USER: "useradmin"
+  VENUE_DB_NAME: "venuedb"
+  VENUE_DB_USER: "venueadmin"
+  RESERVATION_DB_NAME: "reservationdb"
+  RESERVATION_DB_USER: "reservationadmin"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4318/v1/traces"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672"

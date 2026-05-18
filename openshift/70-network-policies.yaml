@@ -1,0 +1,78 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: user-db-from-user-service-only
+spec:
+  podSelector:
+    matchLabels:
+      app: user-db
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: user-service
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: venue-db-from-venue-service-only
+spec:
+  podSelector:
+    matchLabels:
+      app: venue-db
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: venue-service
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: reservation-db-from-reservation-service-only
+spec:
+  podSelector:
+    matchLabels:
+      app: reservation-db
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: reservation-service
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: venue-rental
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal-traffic
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: venue-rental
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: venue-rental

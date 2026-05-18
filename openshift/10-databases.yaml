@@ -1,0 +1,198 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: user-db-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-db
+  labels:
+    app: user-db
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: user-db
+  template:
+    metadata:
+      labels:
+        app: user-db
+    spec:
+      containers:
+        - name: postgres
+          image: bitnami/postgresql:15
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom: { configMapKeyRef: { name: app-config, key: USER_DB_NAME } }
+            - name: POSTGRESQL_USERNAME
+              valueFrom: { configMapKeyRef: { name: app-config, key: USER_DB_USER } }
+            - name: POSTGRESQL_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-secrets, key: USER_DB_PASSWORD } }
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/postgresql
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "useradmin", "-d", "userdb"] }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: user-db-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-db
+spec:
+  selector: { app: user-db }
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: venue-db-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venue-db
+  labels:
+    app: venue-db
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: venue-db
+  template:
+    metadata:
+      labels:
+        app: venue-db
+    spec:
+      containers:
+        - name: postgres
+          image: bitnami/postgresql:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom: { configMapKeyRef: { name: app-config, key: VENUE_DB_NAME } }
+            - name: POSTGRESQL_USERNAME
+              valueFrom: { configMapKeyRef: { name: app-config, key: VENUE_DB_USER } }
+            - name: POSTGRESQL_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-secrets, key: VENUE_DB_PASSWORD } }
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/postgresql
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "venueadmin", "-d", "venuedb"] }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: venue-db-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venue-db
+spec:
+  selector: { app: venue-db }
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reservation-db-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservation-db
+  labels:
+    app: reservation-db
+    app.kubernetes.io/part-of: venue-rental
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: reservation-db
+  template:
+    metadata:
+      labels:
+        app: reservation-db
+    spec:
+      containers:
+        - name: postgres
+          image: bitnami/postgresql:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom: { configMapKeyRef: { name: app-config, key: RESERVATION_DB_NAME } }
+            - name: POSTGRESQL_USERNAME
+              valueFrom: { configMapKeyRef: { name: app-config, key: RESERVATION_DB_USER } }
+            - name: POSTGRESQL_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-secrets, key: RESERVATION_DB_PASSWORD } }
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/postgresql
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "reservationadmin", "-d", "reservationdb"] }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "300m", memory: "256Mi" }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: reservation-db-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservation-db
+spec:
+  selector: { app: reservation-db }
+  ports:
+    - port: 5432
+      targetPort: 5432
