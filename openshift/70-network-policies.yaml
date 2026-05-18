@@ -49,30 +49,19 @@ spec:
         - protocol: TCP
           port: 5432
 ---
+# Dovoli OpenShift routerju (in vsem ostalim namespace-om) dostop do podov,
+# ki so izpostavljeni prek Route. Brez tega Sandbox-ova privzeta politika
+# "allow-same-namespace" blokira ves zunanji promet.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-from-openshift-ingress
+  name: allow-ingress-to-public-pods
 spec:
   podSelector:
-    matchLabels:
-      app.kubernetes.io/part-of: venue-rental
+    matchExpressions:
+      - key: app
+        operator: In
+        values: [shell, web-bff, mobile-bff, jaeger]
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              network.openshift.io/policy-group: ingress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-internal-traffic
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/part-of: venue-rental
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: venue-rental
+        - namespaceSelector: {}
