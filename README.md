@@ -1,31 +1,17 @@
 # Venue Rental
 
-Platforma za oddajo in rezervacijo prostorov za zabave in dogodke.
+A microservices platform for listing and booking event venues. Venue owners can publish their spaces; renters can browse, reserve, and manage their bookings.
 
-Lastniki prostorov lahko objavijo svoje prostore, najemniki pa lahko pregledujejo ponudbo, ustvarijo rezervacijo in upravljajo s svojimi rezervacijami.
+> Slovenian version: [readme-slo.md](readme-slo.md)
 
-## Storitve
+## Architecture
 
-**user-service** – upravlja z uporabniškimi računi, registracijo, prijavo in vlogami (lastnik oz. najemnik). Izpostavlja REST API za spletni vmesnik (prijava, registracija) ter gRPC vmesnik, ki ga ostale storitve uporabljajo interno za preverjanje identitete uporabnika.
-
-**venue-service** – upravlja s seznamom prostorov. Lastniki lahko dodajajo in urejajo svoje prostore, najemniki pa iščejo in pregledujejo razpoložljive prostore.
-
-**reservation-service** – pokriva celoten postopek rezervacije: ustvarjanje rezervacije, potrditev ali odpoved ter preverjanje razpoložljivosti.
-
-**web-ui** – spletni vmesnik v brskalniku, ki končnemu uporabniku omogoča dostop do vseh funkcionalnosti sistema.
-
-**web-bff** – API prehod (Backend-for-Frontend) za spletni vmesnik. Edina vstopna točka za `web-ui`. Agregira klice na mikrostoritve (gRPC za user/venue, REST za reservation) in odjemalcu vrača polne odzive.
-
-**mobile-bff** – API prehod za mobilne odjemalce. Izpostavlja enake vire kot `web-bff`, a z okrajšano obliko odgovorov (manj polj, manjši payload) za omejeno pasovno širino mobilnih naprav.
-
-## Arhitektura
-
-Sistem sledi vzorcu **Backend-for-Frontend (BFF)**: vsak tip odjemalca ima svoj API prehod, ki skrije heterogene mikrostoritve za svojim vmesnikom. Oba prehoda neodvisno kličeta iste tri mikrostoritve — tam, kjer je na voljo gRPC (user, venue), ga uporabljata; sicer REST. Spletni vmesnik komunicira izključno z `web-bff`. Sporočilni posrednik skrbi za asinhrono obdelavo dogodkov.
+The system follows the **Backend-for-Frontend (BFF)** pattern: each client type has a dedicated API gateway that hides the internal microservice heterogeneity. Both gateways independently call the same three backend services — using gRPC where available, REST otherwise. The browser communicates exclusively with `web-bff`.
 
 ```mermaid
 graph TD
-    Browser(Brskalnik)
-    Mobile(Mobilni odjemalec / Postman)
+    Browser(Browser)
+    Mobile(Mobile client / Postman)
 
     Browser -->|HTTP| WebUI[web-ui]
     WebUI -->|REST| WebBFF[web-bff<br/>Express :4000]
@@ -42,102 +28,170 @@ graph TD
     VenueService -->|gRPC| UserService
     ReservationService -->|gRPC| UserService
 
-    ReservationService -->|event| Broker(Sporočilni posrednik)
+    ReservationService -->|event| Broker(Message broker)
 
-    UserService --- DB1[(Baza uporabnikov)]
-    VenueService --- DB2[(Baza prostorov)]
-    ReservationService --- DB3[(Baza rezervacij)]
+    UserService --- DB1[(Users DB)]
+    VenueService --- DB2[(Venues DB)]
+    ReservationService --- DB3[(Reservations DB)]
 ```
 
-## Komunikacija med storitvami
+## Services
 
-| Storitev | Protokol | Namen |
+All services are written in **TypeScript**. Each backend service uses a different Node.js framework — intentionally, to demonstrate that microservices can evolve independently with different technology choices:
+
+| Service | Framework | Why |
 |---|---|---|
-| `web-ui` → `web-bff` | REST API | Enotna vstopna točka za spletni vmesnik |
-| `mobilni odjemalec` → `mobile-bff` | REST API | Enotna vstopna točka za mobilni odjemalec (okrajšani odzivi) |
-| `web-bff` / `mobile-bff` → `user-service` | gRPC | Preverjanje žetona, pridobivanje uporabnika |
-| `web-bff` / `mobile-bff` → `venue-service` | gRPC + REST | gRPC za detajl prostora in preverjanje razpoložljivosti; REST za seznam, dodajanje, urejanje |
-| `web-bff` / `mobile-bff` → `reservation-service` | REST | Rezervacija nima gRPC vmesnika |
-| `venue-service` → `user-service` | gRPC | Preverjanje identitete lastnika |
-| `reservation-service` → `user-service` | gRPC | Preverjanje identitete najemnika |
-| `reservation-service` → sporočilni posrednik | RabbitMQ | Asinhrono obveščanje ob potrditvi/odpovedi rezervacije |
+| `user-service` | Express.js | Minimal, full control — suits the clean-architecture layering |
+| `venue-service` | NestJS | Decorator-based DI and module structure for a larger domain |
+| `reservation-service` | Fastify | Schema validation and performance focus for the write-heavy service |
+| `web-bff` | Express.js | Lightweight aggregation layer |
+| `mobile-bff` | NestJS | Consistent with venue-service; DI helps with circuit breaker wiring |
+| `web-ui` | React + Vite | – |
 
-## Tehnologije
+| Service | DB | REST | gRPC |
+|---|---|---|---|
+| `user-service` | PostgreSQL | :3001 | :50051 |
+| `venue-service` | PostgreSQL | :3002 | :50052 |
+| `reservation-service` | PostgreSQL | :3003 | – |
+| `web-bff` | – | :4000 | – |
+| `mobile-bff` | – | :4001 | – |
+| `web-ui` | – | :80 | – |
 
-| Storitev | Jezik | Ogrodje | Baza | REST port | gRPC port |
-|---|---|---|---|---|---|
-| `user-service` | TypeScript | Express.js | PostgreSQL | 3001 | 50051 |
-| `venue-service` | TypeScript | NestJS | PostgreSQL | 3002 | 50052 |
-| `reservation-service` | TypeScript | Fastify | PostgreSQL | 3003 | – |
-| `web-bff` | TypeScript | Express.js | – | 4000 | – |
-| `mobile-bff` | TypeScript | NestJS | – | 4001 | – |
-| `web-ui` | TypeScript | React + Vite | – | 80 | – |
+**user-service** — manages user accounts, registration, login, and roles (owner / renter). Structured with **Clean Architecture**: domain entities and repository interfaces are fully decoupled from infrastructure (Postgres, gRPC adapters). Exposes a Swagger UI at `/api-docs`. Uses gRPC internally for identity verification by other services.
 
-## Demo skripta (E2E sprehod)
+**venue-service** — manages the venue catalogue. Owners can add and edit venues; renters can browse and view availability.
 
-`scripts/demo-bffs.sh` izvede vsako pot na obeh BFF-jih po vrsti, izpiše `curl` ukaz in odgovor (HTTP status + lepo formatiran JSON). Uporabno za predstavitev, da vse deluje.
+**reservation-service** — covers the full reservation lifecycle: creation, confirmation, cancellation, and availability checking. Publishes events to a RabbitMQ `direct` exchange with routing keys `reservation.created`, `reservation.confirmed`, and `reservation.cancelled` (durable queue, persistent messages).
+
+**web-bff** — API gateway for the browser client. The single entry point for `web-ui`; aggregates gRPC + REST calls and returns full responses. Implements a circuit breaker for resilience.
+
+**mobile-bff** — API gateway for mobile clients. Exposes the same resources as `web-bff` but with trimmed payloads (fewer fields, smaller responses) for constrained bandwidth.
+
+**web-ui** — browser frontend built as a microfrontend shell with federated `venues-mfe` and `reservations-mfe` modules.
+
+## Inter-service Communication
+
+| Caller → Callee | Protocol | Purpose |
+|---|---|---|
+| `web-ui` → `web-bff` | REST | Single entry point for the browser |
+| mobile client → `mobile-bff` | REST | Single entry point for mobile (trimmed responses) |
+| BFFs → `user-service` | gRPC | Token verification, user lookup |
+| BFFs → `venue-service` | gRPC + REST | gRPC for venue detail and availability; REST for CRUD |
+| BFFs → `reservation-service` | REST | Reservation service has no gRPC interface |
+| `venue-service` → `user-service` | gRPC | Owner identity verification |
+| `reservation-service` → `user-service` | gRPC | Renter identity verification |
+| `reservation-service` → broker | RabbitMQ | Async notification on confirmation / cancellation |
+
+## Key Patterns & Features
+
+- **BFF (Backend-for-Frontend)** — separate gateways for web and mobile clients
+- **gRPC** — strongly-typed internal communication with Protobuf schemas
+- **Circuit Breaker** (Opossum) — per-method breakers on all BFF→service calls; see below
+- **Distributed Tracing** — OpenTelemetry + Jaeger; traces span across all services
+- **Clean Architecture** — `user-service` separates domain entities, repository interfaces, use cases, and infrastructure adapters
+- **Swagger / OpenAPI** — `user-service` serves interactive docs at `GET /api-docs`
+- **Message Queue** — RabbitMQ `direct` exchange; routing keys per event type; durable queue + persistent messages
+- **Microfrontend** — Module Federation shell with independently deployable MFEs
+- **Container Orchestration** — OpenShift manifests with HPA and NetworkPolicies
+
+## Circuit Breaker
+
+Every outgoing call from the BFFs (and from `reservation-service`) is wrapped in an [Opossum](https://nodeshift.dev/opossum/) circuit breaker. The implementation uses **per-method granularity** — one breaker per `(downstream service × method)` — so a slow `reservation.list` doesn't trip the breaker for `venue.getVenue`.
+
+**States:** `CLOSED` (normal) → `OPEN` (fast-fail, no traffic sent downstream) → `HALF-OPEN` (one probe call) → back to `CLOSED` on success.
+
+**Configuration used:** 3 s timeout, 50% error threshold, 10 s reset, minimum 3 calls before the threshold is evaluated.
+
+**Fallback strategy varies by criticality:**
+- List/read endpoints → return a degraded stub (`{ items: [], degraded: true }`) so the page still loads
+- `checkAvailability` → return `false` (conservative: rather show "unavailable" than a false confirmation)
+- `verifyToken` and write paths → no fallback; propagate the error so authentication can't be silently bypassed
+
+**Diagnostic endpoint** — each service exposes `GET /admin/breakers`:
 
 ```bash
-docker-compose up --build        # v enem terminalu
-make demo                        # v drugem (ali: bash scripts/demo-bffs.sh)
+curl http://localhost:4000/admin/breakers | jq
+# → { "breakers": [{ "name": "reservation.list", "state": "open", "stats": { ... } }] }
 ```
 
-Negativne primere (401, 400, podvojen email) vključi z `DEMO_INCLUDE_FAILURES=1 make demo`. Celoten zapis se shrani v `scripts/demo-bffs.log`.
+See [docs/circuit-breaker.md](docs/circuit-breaker.md) for the full design rationale, state-transition diagrams, and manual demo steps.
 
-## Demonstracija prehodov (Postman)
+## Running Locally
 
-`web-bff` (polni odzivi, dodatne končne točke za upravljanje vsebin):
-
-```
-POST   http://localhost:4000/auth/register
-POST   http://localhost:4000/auth/login
-GET    http://localhost:4000/users/:id           # Bearer token (mobile-bff je nima)
-GET    http://localhost:4000/venues
-GET    http://localhost:4000/venues/:id          # gRPC → venue-service, agregira owner prek gRPC
-GET    http://localhost:4000/venues/:id/details  # web-only: venue + owner + 7-dnevni koledar razpoložljivosti
-POST   http://localhost:4000/venues              # OWNER; mobile-bff nima CRUD
-PUT    http://localhost:4000/venues/:id          # OWNER
-DELETE http://localhost:4000/venues/:id          # OWNER
-POST   http://localhost:4000/reservations
-GET    http://localhost:4000/reservations
-PATCH  http://localhost:4000/reservations/:id/confirm   # OWNER (mobile-bff nima)
-PATCH  http://localhost:4000/reservations/:id/cancel
+```bash
+docker-compose up --build        # start all services
+make demo                        # E2E walkthrough of all BFF endpoints
+make demo-cb                     # circuit breaker demo (stops reservation-service mid-run)
 ```
 
-`mobile-bff` (okrajšani odzivi, agregirane mobile-only končne točke):
+`scripts/demo-bffs.sh` walks through every endpoint on both BFFs, printing the `curl` command and formatted JSON response. Include failure cases with `DEMO_INCLUDE_FAILURES=1 make demo`. The full run is saved to `scripts/demo-bffs.log`.
 
-```
-POST http://localhost:4001/auth/register        # vrne samo id, email, role
-POST http://localhost:4001/auth/login           # vrne samo token + {id, role}
-GET  http://localhost:4001/venues               # vrne samo id, name, location, pricePerDay
-GET  http://localhost:4001/venues/:id           # vrne samo osnovna polja
-GET  http://localhost:4001/reservations         # Bearer token; brez renter_id, created_at, updated_at
-PATCH http://localhost:4001/reservations/:id/cancel
+`scripts/demo-circuit-breaker.sh` automates the circuit breaker demo: seeds venues, fires requests, stops `reservation-service`, shows the breaker opening and responses degrading, then restarts the service and shows automatic recovery.
 
-# Mobile-only agregirane končne točke (web-bff jih nima):
-GET  http://localhost:4001/mobile/home          # v enem klicu: featuredVenues + myUpcomingReservations
-POST http://localhost:4001/mobile/quick-book    # body: {venueId, date} → avtomatsko preveri razpoložljivost + ustvari rezervacijo
+To seed venues without running the full demo:
+
+```bash
+bash scripts/seed-venues.sh
 ```
 
-**Razlike med prehodoma (primer):**
+## API Endpoints
 
-| | Web BFF | Mobile BFF |
+### web-bff (full responses, content management)
+
+```
+POST   /auth/register
+POST   /auth/login
+GET    /users/:id                      # Bearer token required (mobile-bff omits this)
+GET    /venues
+GET    /venues/:id                     # gRPC → venue-service, aggregates owner via gRPC
+GET    /venues/:id/details             # web-only: venue + owner + 7-day availability calendar
+POST   /venues                         # OWNER role
+PUT    /venues/:id                     # OWNER role
+DELETE /venues/:id                     # OWNER role
+POST   /reservations
+GET    /reservations
+PATCH  /reservations/:id/confirm       # OWNER (mobile-bff omits this)
+PATCH  /reservations/:id/cancel
+```
+
+### mobile-bff (trimmed responses, mobile-only aggregates)
+
+```
+POST  /auth/register        # returns only id, email, role
+POST  /auth/login           # returns only token + {id, role}
+GET   /venues               # returns only id, name, location, pricePerDay
+GET   /venues/:id           # returns only core fields
+GET   /reservations         # Bearer token; omits renter_id, created_at, updated_at
+PATCH /reservations/:id/cancel
+
+# Mobile-only aggregate endpoints (not in web-bff):
+GET  /mobile/home           # single call: featuredVenues + myUpcomingReservations
+POST /mobile/quick-book     # body: {venueId, date} → checks availability + creates reservation
+```
+
+### BFF Comparison
+
+| | web-bff | mobile-bff |
 |---|---|---|
-| Ogrodje | Express | NestJS |
-| Polja v venue odzivu | vse (opis, lastnik, časovne oznake) | 4 osnovna polja |
-| Edinstvene končne točke | `/venues/:id/details`, `/users/:id`, CRUD za prostore, `/reservations/:id/confirm` | `/mobile/home`, `/mobile/quick-book` |
-| Namen | Bogati pogledi za širok zaslon | Manj zahtevkov in manjši payload za mobilne naprave |
+| Framework | Express | NestJS |
+| Venue response fields | all (description, owner, timestamps) | 4 core fields |
+| Unique endpoints | `/venues/:id/details`, `/users/:id`, venue CRUD, `/reservations/:id/confirm` | `/mobile/home`, `/mobile/quick-book` |
+| Purpose | Rich views for desktop | Fewer requests, smaller payloads for mobile |
 
-## Struktura projekta
+## Project Structure
 
 ```
 venue-rental/
-  user-service/        → upravljanje uporabnikov, avtentikacija
-  venue-service/       → upravljanje prostorov in iskanje
-  reservation-service/ → rezervacije in razpoložljivost
-  web-bff/             → API prehod za spletni vmesnik (Express)
-  mobile-bff/          → API prehod za mobilne odjemalce (NestJS)
-  web-ui/              → spletni vmesnik za končnega uporabnika
+  user-service/        → user management, authentication
+  venue-service/       → venue catalogue and search
+  reservation-service/ → reservations and availability
+  web-bff/             → API gateway for browser (Express)
+  mobile-bff/          → API gateway for mobile (NestJS)
+  web-ui/              → browser frontend (React + Module Federation)
+  openshift/           → OpenShift deployment manifests
   docker-compose.yml
-  README.md
 ```
+
+## Deployment
+
+See [openshift/README.md](openshift/README.md) for deploying to an OpenShift cluster (Red Hat Developer Sandbox or any OpenShift 4.x).
