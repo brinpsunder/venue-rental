@@ -114,7 +114,6 @@ curl http://localhost:4000/admin/breakers | jq
 # → { "breakers": [{ "name": "reservation.list", "state": "open", "stats": { ... } }] }
 ```
 
-See [docs/circuit-breaker.md](docs/circuit-breaker.md) for the full design rationale, state-transition diagrams, and manual demo steps.
 
 ## Running Locally
 
